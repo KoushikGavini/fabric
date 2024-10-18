@@ -8,17 +8,18 @@ package cluster
 
 import (
 	"context"
+	crand "crypto/rand"
 	"crypto/x509"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/hyperledger/fabric-lib-go/common/flogging"
-	"github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric-protos-go/orderer"
+	"github.com/hyperledger/fabric-protos-go-apiv2/common"
+	"github.com/hyperledger/fabric-protos-go-apiv2/orderer"
 	"github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/internal/pkg/identity"
 	"github.com/hyperledger/fabric/protoutil"
@@ -388,8 +389,10 @@ func randomEndpoint(endpointsToHeight map[string]*endpointInfo) string {
 		candidates = append(candidates, endpoint)
 	}
 
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	return candidates[r.Intn(len(candidates))]
+	var seed [32]byte
+	_, _ = crand.Read(seed[:])
+	r := rand.New(rand.NewChaCha8(seed))
+	return candidates[r.IntN(len(candidates))]
 }
 
 // fetchLastBlockSeq returns the last block sequence of an endpoint with the given gRPC connection.

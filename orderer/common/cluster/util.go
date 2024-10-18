@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/ecdsa"
+	crand "crypto/rand"
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
@@ -18,19 +19,17 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/hyperledger/fabric-config/protolator"
 	"github.com/hyperledger/fabric-lib-go/bccsp"
 	"github.com/hyperledger/fabric-lib-go/common/flogging"
-	"github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric-protos-go/orderer"
+	"github.com/hyperledger/fabric-protos-go-apiv2/common"
+	"github.com/hyperledger/fabric-protos-go-apiv2/orderer"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/deliverclient"
 	"github.com/hyperledger/fabric/common/policies"
@@ -41,6 +40,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/peer"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ConnByCertMap maps certificates represented as strings
@@ -650,7 +651,9 @@ func (cm *ComparisonMemoizer) shrink() {
 func (cm *ComparisonMemoizer) setup() {
 	cm.lock.Lock()
 	defer cm.lock.Unlock()
-	cm.rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+	var seed [32]byte
+	_, _ = crand.Read(seed[:])
+	cm.rand = rand.New(rand.NewChaCha8(seed))
 	cm.cache = make(map[arguments]bool)
 }
 
@@ -815,7 +818,7 @@ func LatestHeightAndEndpoint(puller ChainPuller) (string, uint64, error) {
 	return mostUpToDateEndpoint, maxHeight, nil
 }
 
-func EncodeTimestamp(t *timestamp.Timestamp) []byte {
+func EncodeTimestamp(t *timestamppb.Timestamp) []byte {
 	b := make([]byte, 8)
 	binary.LittleEndian.PutUint64(b, uint64(t.Seconds))
 	return b

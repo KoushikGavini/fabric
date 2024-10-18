@@ -11,11 +11,10 @@ import (
 	"encoding/gob"
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-chaincode-go/shim"
-	mspprotos "github.com/hyperledger/fabric-protos-go/msp"
-	pb "github.com/hyperledger/fabric-protos-go/peer"
-	lb "github.com/hyperledger/fabric-protos-go/peer/lifecycle"
+	"github.com/hyperledger/fabric-chaincode-go/v2/shim"
+	mspprotos "github.com/hyperledger/fabric-protos-go-apiv2/msp"
+	pb "github.com/hyperledger/fabric-protos-go-apiv2/peer"
+	lb "github.com/hyperledger/fabric-protos-go-apiv2/peer/lifecycle"
 	"github.com/hyperledger/fabric/common/chaincode"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/policydsl"
@@ -24,10 +23,12 @@ import (
 	"github.com/hyperledger/fabric/core/chaincode/persistence"
 	"github.com/hyperledger/fabric/core/dispatcher"
 	"github.com/hyperledger/fabric/core/ledger"
+	. "github.com/hyperledger/fabric/internal/test"
 	"github.com/hyperledger/fabric/msp"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ = Describe("SCC", func() {
@@ -497,10 +498,7 @@ var _ = Describe("SCC", func() {
 					ValidationPlugin:    "validation-plugin",
 					ValidationParameter: []byte("validation-parameter"),
 				}))
-				Expect(proto.Equal(
-					cd.Collections,
-					collConfigs.toProtoCollectionConfigPackage(),
-				)).Should(BeTrue())
+				Expect(cd.Collections).To(ProtoEqual(collConfigs.toProtoCollectionConfigPackage()))
 
 				Expect(packageID).To(Equal("hash"))
 				Expect(pubState).To(Equal(fakeStub))
@@ -974,7 +972,7 @@ var _ = Describe("SCC", func() {
 				chname, ccname, cd, pubState, orgStates := fakeSCCFuncs.CommitChaincodeDefinitionArgsForCall(0)
 				Expect(chname).To(Equal("test-channel"))
 				Expect(ccname).To(Equal("cc-name2"))
-				Expect(cd).To(Equal(&lifecycle.ChaincodeDefinition{
+				etl := &lifecycle.ChaincodeDefinition{
 					Sequence: 7,
 					EndorsementInfo: &lb.ChaincodeEndorsementInfo{
 						Version:           "version-2+2",
@@ -1001,7 +999,11 @@ var _ = Describe("SCC", func() {
 							},
 						},
 					},
-				}))
+				}
+				Expect(cd.Sequence).To(Equal(etl.Sequence))
+				Expect(cd.EndorsementInfo).To(ProtoEqual(etl.EndorsementInfo))
+				Expect(cd.Collections).To(ProtoEqual(etl.Collections))
+				Expect(cd.ValidationInfo).To(ProtoEqual(etl.ValidationInfo))
 				Expect(pubState).To(Equal(fakeStub))
 				Expect(len(orgStates)).To(Equal(2))
 				Expect(orgStates[0]).To(BeAssignableToTypeOf(&lifecycle.ChaincodePrivateLedgerShim{}))
@@ -1247,7 +1249,7 @@ var _ = Describe("SCC", func() {
 				Expect(ccname).To(Equal("name"))
 				colls, ok := proto.Clone(arg.Collections).(*pb.CollectionConfigPackage)
 				Expect(ok).To(BeTrue())
-				Expect(cd).To(Equal(&lifecycle.ChaincodeDefinition{
+				etl := &lifecycle.ChaincodeDefinition{
 					Sequence: 7,
 					EndorsementInfo: &lb.ChaincodeEndorsementInfo{
 						Version:           "version",
@@ -1259,7 +1261,11 @@ var _ = Describe("SCC", func() {
 						ValidationParameter: []byte("validation-parameter"),
 					},
 					Collections: colls,
-				}))
+				}
+				Expect(cd.Sequence).To(Equal(etl.Sequence))
+				Expect(cd.EndorsementInfo).To(ProtoEqual(etl.EndorsementInfo))
+				Expect(cd.Collections).To(ProtoEqual(etl.Collections))
+				Expect(cd.ValidationInfo).To(ProtoEqual(etl.ValidationInfo))
 				Expect(pubState).To(Equal(fakeStub))
 				Expect(orgStates).To(HaveLen(2))
 				Expect(orgStates[0]).To(BeAssignableToTypeOf(&lifecycle.ChaincodePrivateLedgerShim{}))
@@ -1354,7 +1360,7 @@ var _ = Describe("SCC", func() {
 				payload := &lb.QueryApprovedChaincodeDefinitionResult{}
 				err := proto.Unmarshal(res.Payload, payload)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(proto.Equal(payload, &lb.QueryApprovedChaincodeDefinitionResult{
+				Expect(payload).To(ProtoEqual(&lb.QueryApprovedChaincodeDefinitionResult{
 					Sequence:            7,
 					Version:             "version",
 					EndorsementPlugin:   "endorsement-plugin",
@@ -1369,7 +1375,7 @@ var _ = Describe("SCC", func() {
 							},
 						},
 					},
-				})).To(BeTrue())
+				}))
 
 				Expect(fakeSCCFuncs.QueryApprovedChaincodeDefinitionCallCount()).To(Equal(1))
 				chname, ccname, sequence, pubState, privState := fakeSCCFuncs.QueryApprovedChaincodeDefinitionArgsForCall(0)
@@ -1683,7 +1689,7 @@ var _ = Describe("SCC", func() {
 				payload := &lb.QueryChaincodeDefinitionResult{}
 				err := proto.Unmarshal(res.Payload, payload)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(proto.Equal(payload, &lb.QueryChaincodeDefinitionResult{
+				Expect(payload).To(ProtoEqual(&lb.QueryChaincodeDefinitionResult{
 					Sequence:            2,
 					Version:             "version",
 					EndorsementPlugin:   "endorsement-plugin",
@@ -1694,7 +1700,7 @@ var _ = Describe("SCC", func() {
 						"fake-mspid":  true,
 						"other-mspid": true,
 					},
-				})).To(BeTrue())
+				}))
 
 				Expect(fakeSCCFuncs.QueryChaincodeDefinitionCallCount()).To(Equal(1))
 				name, pubState := fakeSCCFuncs.QueryChaincodeDefinitionArgsForCall(0)

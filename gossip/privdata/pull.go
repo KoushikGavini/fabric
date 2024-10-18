@@ -8,14 +8,15 @@ package privdata
 
 import (
 	"bytes"
+	crand "crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 	"time"
 
-	protosgossip "github.com/hyperledger/fabric-protos-go/gossip"
+	protosgossip "github.com/hyperledger/fabric-protos-go-apiv2/gossip"
 	commonutil "github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/core/common/privdata"
 	"github.com/hyperledger/fabric/gossip/api"
@@ -30,6 +31,7 @@ import (
 	"github.com/hyperledger/fabric/protoutil"
 	"github.com/pkg/errors"
 	"go.uber.org/zap/zapcore"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -372,7 +374,7 @@ func (p *puller) scatterRequests(peersDigestMapping peer2Digests) []util.Subscri
 }
 
 type (
-	peer2Digests      map[remotePeer][]protosgossip.PvtDataDigest
+	peer2Digests      map[remotePeer][]*protosgossip.PvtDataDigest
 	noneSelectedPeers []discovery.NetworkMember
 )
 
@@ -380,7 +382,7 @@ func (p *puller) assignDigestsToPeers(members []discovery.NetworkMember, dig2Fil
 	if p.logger.IsEnabledFor(zapcore.DebugLevel) {
 		p.logger.Debug("Matching", members, "to", dig2Filter.String())
 	}
-	res := make(map[remotePeer][]protosgossip.PvtDataDigest)
+	res := make(map[remotePeer][]*protosgossip.PvtDataDigest)
 	// Create a mapping between peer and digests to ask for
 	for dig, collectionFilter := range dig2Filter {
 		// Find a peer that is a preferred peer
@@ -396,7 +398,7 @@ func (p *puller) assignDigestsToPeers(members []discovery.NetworkMember, dig2Fil
 		}
 		// Add the peer to the mapping from peer to digest slice
 		peer := remotePeer{pkiID: string(selectedPeer.PKIID), endpoint: selectedPeer.Endpoint}
-		res[peer] = append(res[peer], protosgossip.PvtDataDigest{
+		res[peer] = append(res[peer], &protosgossip.PvtDataDigest{
 			TxId:       dig.TxId,
 			BlockSeq:   dig.BlockSeq,
 			SeqInBlock: dig.SeqInBlock,
@@ -680,7 +682,9 @@ func (p *puller) isEligibleByLatestConfig(channel string, collection string, cha
 }
 
 func randomizeMemberList(members []discovery.NetworkMember) []discovery.NetworkMember {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	var seed [32]byte
+	_, _ = crand.Read(seed[:])
+	r := rand.New(rand.NewChaCha8(seed))
 	res := make([]discovery.NetworkMember, len(members))
 	for i, j := range r.Perm(len(members)) {
 		res[i] = members[j]
@@ -688,13 +692,10 @@ func randomizeMemberList(members []discovery.NetworkMember) []discovery.NetworkM
 	return res
 }
 
-func digestsAsPointerSlice(digests []protosgossip.PvtDataDigest) []*protosgossip.PvtDataDigest {
+func digestsAsPointerSlice(digests []*protosgossip.PvtDataDigest) []*protosgossip.PvtDataDigest {
 	res := make([]*protosgossip.PvtDataDigest, len(digests))
 	for i, dig := range digests {
-		// re-introduce dig variable to allocate
-		// new address for each iteration
-		dig := dig
-		res[i] = &dig
+		res[i] = proto.Clone(dig).(*protosgossip.PvtDataDigest)
 	}
 	return res
 }

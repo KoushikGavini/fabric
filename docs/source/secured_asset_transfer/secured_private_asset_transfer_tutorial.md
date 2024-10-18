@@ -152,7 +152,6 @@ The hash of the asset properties will become the asset ID and is returned by the
 ```
 export ASSET_ID=d9923f21b770adbc79cbcc47a3aeecc81dc7f030bd129155301ce3932be7fbcc
 ```
-
 We can query the Org1 implicit data collection to see the asset that was created, write the following command by substituting assetId with the id returned from the createAsset function.
 
 ```
@@ -174,7 +173,7 @@ peer chaincode query -o localhost:7050 --ordererTLSHostnameOverride orderer.exam
 The command will return the record that the asset is owned by Org1:
 
 ```
-{"object_type":"asset","asset_id":"d9923f21b770adbc79cbcc47a3aeecc81dc7f030bd129155301ce3932be7fbcc","owner_org":"Org1MSP","public_description":"A new asset for Org1MSP"}
+{"objectType":"asset","assetID":"d9923f21b770adbc79cbcc47a3aeecc81dc7f030bd129155301ce3932be7fbcc","ownerOrg":"Org1MSP","publicDescription":"A new asset for Org1MSP"}
 ```
 
 Because the market for assets is hot, Org1 wants to flip this asset and put it up for sale. As the asset owner, Org1 can update the public description to advertise that the asset is for sale. Run the following command to change the asset description:
@@ -192,7 +191,7 @@ peer chaincode query -o localhost:7050 --ordererTLSHostnameOverride orderer.exam
 We can now see that the asset is for sale:
 
 ```
-{"object_type":"asset","asset_id":"d9923f21b770adbc79cbcc47a3aeecc81dc7f030bd129155301ce3932be7fbcc","owner_org":"Org1MSP","public_description":"This asset is for sale"}
+ {"objectType":"asset","assetID":"d9923f21b770adbc79cbcc47a3aeecc81dc7f030bd129155301ce3932be7fbcc","ownerOrg":"Org1MSP","publicDescription":"This asset is for sale"}
 ```
 
   ![Org1 creates a asset](./transfer_assets_1.png)  
@@ -210,7 +209,7 @@ peer chaincode query -o localhost:7050 --ordererTLSHostnameOverride orderer.exam
 From this query, Org2 learns that the asset is for sale:
 
 ```
-{"object_type":"asset","asset_id":"d9923f21b770adbc79cbcc47a3aeecc81dc7f030bd129155301ce3932be7fbcc","owner_org":"Org1MSP","public_description":"This asset is for sale"}
+{"objectType":"asset","assetID":"d9923f21b770adbc79cbcc47a3aeecc81dc7f030bd129155301ce3932be7fbcc","ownerOrg":"Org1MSP","publicDescription":"This asset is for sale"}
 ```
 
 _In a real chaincode you may want to query for all assets for sale, by using a JSON query, or by creating a different sale key and using a key range query to find the assets currently for sale._
@@ -311,7 +310,7 @@ peer chaincode query -o localhost:7050 --ordererTLSHostnameOverride orderer.exam
 The record now lists Org2 as the asset owner:
 
 ```
-{"object_type":"asset","asset_id":"<asset1>","owner_org":"Org2MSP","public_description":"This asset is for sale"}
+{"objectType":"asset","assetID":"d9923f21b770adbc79cbcc47a3aeecc81dc7f030bd129155301ce3932be7fbcc","ownerOrg":"Org2MSP","publicDescription":"This asset is for sale"}
 ```
 
   ![Org1 transfers the asset to Org2](./transfer_assets_3.png)  

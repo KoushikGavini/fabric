@@ -11,7 +11,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	"sort"
 	"strconv"
@@ -21,9 +21,8 @@ import (
 	"testing"
 	"time"
 
-	protoG "github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-lib-go/common/flogging"
-	proto "github.com/hyperledger/fabric-protos-go/gossip"
+	proto "github.com/hyperledger/fabric-protos-go-apiv2/gossip"
 	"github.com/hyperledger/fabric/gossip/common"
 	"github.com/hyperledger/fabric/gossip/gossip/msgstore"
 	"github.com/hyperledger/fabric/gossip/protoext"
@@ -36,6 +35,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
+	protoG "google.golang.org/protobuf/proto"
 )
 
 var timeout = time.Second * time.Duration(15)
@@ -576,7 +576,7 @@ func TestConnect(t *testing.T) {
 	}
 	waitUntilOrFail(t, fullMembership)
 
-	discInst := instances[rand.Intn(len(instances))].Discovery.(*gossipDiscoveryImpl)
+	discInst := instances[rand.IntN(len(instances))].Discovery.(*gossipDiscoveryImpl)
 	mr, _ := discInst.createMembershipRequest(true)
 	am, _ := protoext.EnvelopeToGossipMessage(mr.GetMemReq().SelfInformation)
 	require.NotNil(t, am.SecretEnvelope)

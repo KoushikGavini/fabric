@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-	cb "github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric-protos-go/msp"
+	"github.com/hyperledger/fabric-lib-go/common/flogging"
+	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
+	"github.com/hyperledger/fabric-protos-go-apiv2/msp"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/crypto/tlsgen"
 	"github.com/hyperledger/fabric/internal/configtxlator/update"
@@ -22,6 +22,7 @@ import (
 	"github.com/hyperledger/fabric/protoutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 )
 
 var nonce uint64 = 0
@@ -357,6 +358,9 @@ func TestAddNodeWhileAnotherNodeIsDown(t *testing.T) {
 func TestAddAndRemoveNodeWithoutStop(t *testing.T) {
 	dir := t.TempDir()
 	channelId := "testchannel"
+
+	flogging.ActivateSpec("debug")
+	defer flogging.ActivateSpec("info")
 
 	// start a network
 	networkSetupInfo := NewNetworkSetupInfo(t, channelId, dir)

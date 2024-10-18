@@ -8,16 +8,15 @@ package gateway
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"sort"
 	"strings"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-lib-go/common/flogging"
-	dp "github.com/hyperledger/fabric-protos-go/discovery"
-	"github.com/hyperledger/fabric-protos-go/gossip"
-	"github.com/hyperledger/fabric-protos-go/peer"
+	dp "github.com/hyperledger/fabric-protos-go-apiv2/discovery"
+	"github.com/hyperledger/fabric-protos-go-apiv2/gossip"
+	"github.com/hyperledger/fabric-protos-go-apiv2/peer"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/core/scc"
 	gossipapi "github.com/hyperledger/fabric/gossip/api"
@@ -25,6 +24,8 @@ import (
 	gossipdiscovery "github.com/hyperledger/fabric/gossip/discovery"
 	"github.com/hyperledger/fabric/internal/pkg/gateway/ledger"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
 )
 
 type Discovery interface {
@@ -58,7 +59,8 @@ type endorserState struct {
 func (reg *registry) endorsementPlan(channel string, interest *peer.ChaincodeInterest, preferredEndorser *endorser) (*plan, error) {
 	descriptor, err := reg.discovery.PeersForEndorsement(gossipcommon.ChannelID(channel), interest)
 	if err != nil {
-		logger.Errorw("PeersForEndorsement failed.", "error", err, "channel", channel, "ChaincodeInterest", proto.MarshalTextString(interest))
+		b, _ := prototext.Marshal(interest)
+		logger.Errorw("PeersForEndorsement failed.", "error", err, "channel", channel, "ChaincodeInterest", b)
 		return nil, errors.Wrap(err, "no combination of peers can be derived which satisfy the endorsement policy")
 	}
 

@@ -10,20 +10,21 @@ import (
 	"fmt"
 	"time"
 
+	. "github.com/hyperledger/fabric/internal/test"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/golang/protobuf/proto"
-	cb "github.com/hyperledger/fabric-protos-go/common"
-	ab "github.com/hyperledger/fabric-protos-go/orderer"
-	"github.com/hyperledger/fabric-protos-go/orderer/etcdraft"
-	"github.com/hyperledger/fabric-protos-go/orderer/smartbft"
+	cb "github.com/hyperledger/fabric-protos-go-apiv2/common"
+	ab "github.com/hyperledger/fabric-protos-go-apiv2/orderer"
+	"github.com/hyperledger/fabric-protos-go-apiv2/orderer/etcdraft"
+	"github.com/hyperledger/fabric-protos-go-apiv2/orderer/smartbft"
 	"github.com/hyperledger/fabric/common/util"
 	"github.com/hyperledger/fabric/internal/configtxgen/encoder"
 	"github.com/hyperledger/fabric/internal/configtxgen/encoder/fakes"
 	"github.com/hyperledger/fabric/internal/configtxgen/genesisconfig"
 	"github.com/hyperledger/fabric/internal/pkg/identity"
 	"github.com/hyperledger/fabric/protoutil"
+	"google.golang.org/protobuf/proto"
 )
 
 //go:generate counterfeiter -o fakes/signer_serializer.go --fake-name SignerSerializer . signerSerializer
@@ -951,7 +952,7 @@ var _ = Describe("Encoder", func() {
 						},
 					},
 				}
-				Expect(proto.Equal(expected, cg)).To(BeTrue())
+				Expect(expected).To(ProtoEqual(cg))
 			})
 
 			Context("when the template configuration is not the default", func() {
@@ -1339,7 +1340,7 @@ var _ = Describe("Encoder", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(len(cg.Groups)).To(Equal(2))
 				Expect(cg.Groups["Orderer"]).NotTo(BeNil())
-				Expect(proto.Equal(cg.Groups["Orderer"], sysChannelGroup.Groups["Orderer"])).To(BeTrue())
+				Expect(cg.Groups["Orderer"]).To(ProtoEqual(sysChannelGroup.Groups["Orderer"]))
 				Expect(cg.Groups["Application"]).NotTo(BeNil())
 				Expect(len(cg.Groups["Application"].Policies)).To(Equal(1))
 				Expect(cg.Groups["Application"].Policies["Admins"]).NotTo(BeNil())

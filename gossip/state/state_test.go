@@ -8,23 +8,23 @@ package state
 
 import (
 	"bytes"
+	crand "crypto/rand"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	pb "github.com/golang/protobuf/proto"
 	"github.com/hyperledger/fabric-lib-go/bccsp/factory"
 	"github.com/hyperledger/fabric-lib-go/common/flogging"
 	"github.com/hyperledger/fabric-lib-go/common/metrics/disabled"
-	pcomm "github.com/hyperledger/fabric-protos-go/common"
-	proto "github.com/hyperledger/fabric-protos-go/gossip"
-	"github.com/hyperledger/fabric-protos-go/ledger/rwset"
-	tspb "github.com/hyperledger/fabric-protos-go/transientstore"
+	pcomm "github.com/hyperledger/fabric-protos-go-apiv2/common"
+	proto "github.com/hyperledger/fabric-protos-go-apiv2/gossip"
+	"github.com/hyperledger/fabric-protos-go-apiv2/ledger/rwset"
+	tspb "github.com/hyperledger/fabric-protos-go-apiv2/transientstore"
 	"github.com/hyperledger/fabric/common/configtx/test"
 	errors2 "github.com/hyperledger/fabric/common/errors"
 	"github.com/hyperledger/fabric/core/committer"
@@ -53,6 +53,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	pb "google.golang.org/protobuf/proto"
 )
 
 var (
@@ -770,9 +771,11 @@ func TestBlockingEnqueue(t *testing.T) {
 
 	// Get a block from gossip every 1ms too
 	go func() {
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		var seed [32]byte
+		_, _ = crand.Read(seed[:])
+		r := rand.New(rand.NewChaCha8(seed))
 		for i := 1; i <= numBlocksReceived/2; i++ {
-			blockSeq := r.Intn(numBlocksReceived)
+			blockSeq := r.IntN(numBlocksReceived)
 			rawblock := protoutil.NewBlock(uint64(blockSeq), []byte{})
 			b, _ := pb.Marshal(rawblock)
 			block := &proto.Payload{

@@ -14,14 +14,14 @@ import (
 	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric-protos-go/gateway"
-	"github.com/hyperledger/fabric-protos-go/orderer"
-	"github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/hyperledger/fabric-protos-go/peer/lifecycle"
+	"github.com/hyperledger/fabric-protos-go-apiv2/common"
+	"github.com/hyperledger/fabric-protos-go-apiv2/gateway"
+	"github.com/hyperledger/fabric-protos-go-apiv2/orderer"
+	"github.com/hyperledger/fabric-protos-go-apiv2/peer"
+	"github.com/hyperledger/fabric-protos-go-apiv2/peer/lifecycle"
 	"github.com/hyperledger/fabric/integration/channelparticipation"
 	"github.com/hyperledger/fabric/integration/nwo"
+	. "github.com/hyperledger/fabric/internal/test"
 	"github.com/hyperledger/fabric/protoutil"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -30,6 +30,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 func NewProposedTransaction(signingIdentity *nwo.SigningIdentity, channelName, chaincodeName, transactionName string, transientData map[string][]byte, args ...[]byte) (*peer.SignedProposal, string) {
@@ -273,7 +274,7 @@ var _ = Describe("GatewayService basic", func() {
 				},
 			}
 			Expect(response.Result.Payload).To(Equal(expectedResponse.Result.Payload))
-			Expect(proto.Equal(response, expectedResponse)).To(BeTrue(), "Expected\n\t%#v\nto proto.Equal\n\t%#v", response, expectedResponse)
+			Expect(response).To(ProtoEqual(expectedResponse))
 		})
 
 		It("should respond with system chaincode result", func() {
@@ -305,7 +306,7 @@ var _ = Describe("GatewayService basic", func() {
 				Payload: []byte("conga payload"),
 			}
 			Expect(result.Payload).To(Equal(expectedResult.Payload))
-			Expect(proto.Equal(result, expectedResult)).To(BeTrue(), "Expected\n\t%#v\nto proto.Equal\n\t%#v", result, expectedResult)
+			Expect(result).To(ProtoEqual(expectedResult))
 		})
 
 		It("should endorse a system chaincode transaction", func() {
@@ -402,7 +403,7 @@ var _ = Describe("GatewayService basic", func() {
 				EventName:   "EVENT_NAME",
 				Payload:     []byte("EVENT_PAYLOAD"),
 			}
-			Expect(proto.Equal(event.Events[0], expectedEvent)).To(BeTrue(), "Expected\n\t%#v\nto proto.Equal\n\t%#v", event.Events[0], expectedEvent)
+			Expect(event.Events[0]).To(ProtoEqual(expectedEvent))
 		})
 
 		It("should respond with replayed chaincode events", func() {
@@ -435,7 +436,7 @@ var _ = Describe("GatewayService basic", func() {
 				EventName:   "EVENT_NAME",
 				Payload:     []byte("EVENT_PAYLOAD"),
 			}
-			Expect(proto.Equal(event.Events[0], expectedEvent)).To(BeTrue(), "Expected\n\t%#v\nto proto.Equal\n\t%#v", event.Events[0], expectedEvent)
+			Expect(event.Events[0]).To(ProtoEqual(expectedEvent))
 		})
 
 		It("should respond with replayed chaincode events after specified transaction ID", func() {
@@ -472,7 +473,7 @@ var _ = Describe("GatewayService basic", func() {
 				EventName:   "CORRECT_EVENT_NAME",
 				Payload:     []byte("CORRECT_EVENT_PAYLOAD"),
 			}
-			Expect(proto.Equal(event.Events[0], expectedEvent)).To(BeTrue(), "Expected\n\t%#v\nto proto.Equal\n\t%#v", event.Events[0], expectedEvent)
+			Expect(event.Events[0]).To(ProtoEqual(expectedEvent))
 		})
 
 		It("should default to next commit if start position not specified", func() {
@@ -496,7 +497,7 @@ var _ = Describe("GatewayService basic", func() {
 				EventName:   "EVENT_NAME",
 				Payload:     []byte("EVENT_PAYLOAD"),
 			}
-			Expect(proto.Equal(event.Events[0], expectedEvent)).To(BeTrue(), "Expected\n\t%#v\nto proto.Equal\n\t%#v", event.Events[0], expectedEvent)
+			Expect(event.Events[0]).To(ProtoEqual(expectedEvent))
 		})
 
 		It("should fail on unauthorized identity", func() {

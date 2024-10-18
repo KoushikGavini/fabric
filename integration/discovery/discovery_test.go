@@ -15,14 +15,14 @@ import (
 	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
-	"github.com/golang/protobuf/proto"
-	"github.com/hyperledger/fabric-protos-go/common"
-	"github.com/hyperledger/fabric-protos-go/discovery"
-	pm "github.com/hyperledger/fabric-protos-go/msp"
+	"github.com/hyperledger/fabric-protos-go-apiv2/common"
+	"github.com/hyperledger/fabric-protos-go-apiv2/discovery"
+	pm "github.com/hyperledger/fabric-protos-go-apiv2/msp"
 	"github.com/hyperledger/fabric/common/policydsl"
 	"github.com/hyperledger/fabric/integration/channelparticipation"
 	"github.com/hyperledger/fabric/integration/nwo"
 	"github.com/hyperledger/fabric/integration/nwo/commands"
+	. "github.com/hyperledger/fabric/internal/test"
 	"github.com/hyperledger/fabric/msp"
 	"github.com/hyperledger/fabric/protoutil"
 	. "github.com/onsi/ginkgo/v2"
@@ -31,6 +31,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"github.com/tedsuo/ifrit"
 	ginkgomon "github.com/tedsuo/ifrit/ginkgomon_v2"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ = Describe("DiscoveryService", func() {
@@ -273,7 +274,7 @@ var _ = Describe("DiscoveryService", func() {
 			discoveredConfig2 := discoverConfiguration(network, org3Peer0)
 
 			By("comparing configuration from org1Peer0 and org3Peer0")
-			Expect(proto.Equal(discoveredConfig, discoveredConfig2)).To(BeTrue())
+			Expect(discoveredConfig).To(ProtoEqual(discoveredConfig2))
 
 			By("validating the membership data")
 			Expect(discoveredConfig.Msps).To(HaveLen(len(network.Organizations)))
@@ -281,22 +282,28 @@ var _ = Describe("DiscoveryService", func() {
 				org := network.Organization(o.Organization)
 				mspConfig, err := msp.GetVerifyingMspConfig(network.OrdererOrgMSPDir(org), org.MSPID, "bccsp")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(discoveredConfig.Msps[org.MSPID]).To(Equal(unmarshalFabricMSPConfig(mspConfig)))
+				Expect(discoveredConfig.Msps[org.MSPID]).To(ProtoEqual(unmarshalFabricMSPConfig(mspConfig)))
 			}
 			for _, p := range network.Peers {
 				org := network.Organization(p.Organization)
 				mspConfig, err := msp.GetVerifyingMspConfig(network.PeerOrgMSPDir(org), org.MSPID, "bccsp")
 				Expect(err).NotTo(HaveOccurred())
-				Expect(discoveredConfig.Msps[org.MSPID]).To(Equal(unmarshalFabricMSPConfig(mspConfig)))
+				Expect(discoveredConfig.Msps[org.MSPID]).To(ProtoEqual(unmarshalFabricMSPConfig(mspConfig)))
 			}
 
 			By("validating the orderers")
 			Expect(discoveredConfig.Orderers).To(HaveLen(len(network.Orderers)))
+		external:
 			for _, orderer := range network.Orderers {
 				ordererMSPID := network.Organization(orderer.Organization).MSPID
-				Expect(discoveredConfig.Orderers[ordererMSPID].Endpoint).To(ConsistOf(
-					&discovery.Endpoint{Host: "127.0.0.1", Port: uint32(network.OrdererPort(orderer, nwo.ListenPort))},
-				))
+				for _, endpoint := range discoveredConfig.Orderers[ordererMSPID].Endpoint {
+					if proto.Equal(endpoint,
+						&discovery.Endpoint{Host: "127.0.0.1", Port: uint32(network.OrdererPort(orderer, nwo.ListenPort))},
+					) {
+						continue external
+					}
+				}
+				Fail("no match orderer host")
 			}
 
 			//
@@ -347,7 +354,7 @@ var _ = Describe("DiscoveryService", func() {
 			sess, err := network.Discover(endorsers)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(sess, network.EventuallyTimeout).Should(gexec.Exit(1))
-			Expect(sess.Err).To(gbytes.Say(`failed constructing descriptor for chaincodes:<name:"mycc-lifecycle"`))
+			Expect(sess.Err).To(gbytes.Say(`failed constructing descriptor for chaincodes:{name:"mycc-lifecycle"`))
 
 			By("deploying chaincode using org1 and org2")
 			chaincodePath := components.Build("github.com/hyperledger/fabric/integration/chaincode/simple/cmd")

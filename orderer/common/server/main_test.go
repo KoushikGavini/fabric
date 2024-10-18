@@ -23,7 +23,7 @@ import (
 	"github.com/hyperledger/fabric-lib-go/common/flogging/floggingtest"
 	"github.com/hyperledger/fabric-lib-go/common/metrics/disabled"
 	"github.com/hyperledger/fabric-lib-go/common/metrics/prometheus"
-	"github.com/hyperledger/fabric-protos-go/common"
+	"github.com/hyperledger/fabric-protos-go-apiv2/common"
 	"github.com/hyperledger/fabric/common/channelconfig"
 	"github.com/hyperledger/fabric/common/crypto/tlsgen"
 	"github.com/hyperledger/fabric/common/ledger/blockledger"
@@ -191,7 +191,7 @@ func TestInitializeServerConfig(t *testing.T) {
 			privateKey:     goodFile,
 			rootCA:         goodFile,
 			clientRootCert: goodFile,
-			expectedPanic:  "Failed to load server Certificate file 'does_not_exist' (open does_not_exist: no such file or directory)",
+			expectedPanic:  "Failed to load server TLS Certificate file 'does_not_exist' (open does_not_exist: no such file or directory)",
 		},
 		{
 			name:           "BadPrivateKey",
@@ -199,7 +199,7 @@ func TestInitializeServerConfig(t *testing.T) {
 			privateKey:     badFile,
 			rootCA:         goodFile,
 			clientRootCert: goodFile,
-			expectedPanic:  "Failed to load PrivateKey file 'does_not_exist' (open does_not_exist: no such file or directory)",
+			expectedPanic:  "Failed to load TLS PrivateKey file 'does_not_exist' (open does_not_exist: no such file or directory)",
 		},
 		{
 			name:           "BadRootCA",
@@ -207,7 +207,7 @@ func TestInitializeServerConfig(t *testing.T) {
 			privateKey:     goodFile,
 			rootCA:         badFile,
 			clientRootCert: goodFile,
-			expectedPanic:  "Failed to load ServerRootCAs file 'open does_not_exist: no such file or directory' (does_not_exist)",
+			expectedPanic:  "Failed to load TLS ServerRootCAs file 'open does_not_exist: no such file or directory' (does_not_exist)",
 		},
 		{
 			name:           "BadClientRootCertificate",
@@ -215,7 +215,7 @@ func TestInitializeServerConfig(t *testing.T) {
 			privateKey:     goodFile,
 			rootCA:         goodFile,
 			clientRootCert: badFile,
-			expectedPanic:  "Failed to load ClientRootCAs file 'open does_not_exist: no such file or directory' (does_not_exist)",
+			expectedPanic:  "Failed to load TLS ClientRootCAs file 'open does_not_exist: no such file or directory' (does_not_exist)",
 		},
 		{
 			name:           "BadCertificate - cluster reuses server config",
