@@ -1,9 +1,3 @@
-/*
-Copyright IBM Corp All Rights Reserved.
-
-SPDX-License-Identifier: Apache-2.0
-*/
-
 package raft
 
 import (
@@ -82,6 +76,10 @@ var _ = Describe("ConsensusTypeMigration", func() {
 	// This test restarts the orderers and ensures they operate under the new configuration.
 	Describe("Raft to BFT migration", func() {
 		It("migrates from Raft to BFT", func() {
+			// Add pre-migration check here
+			By("0) Performing pre-migration checks")
+			assertPreMigrationChecks(network, peer, o1, "testchannel")
+
 			// === Step 1: Create and run Raft based system with 4 nodes ===
 			By("1) Starting Raft based system with 4 nodes")
 			networkConfig := nwo.MultiNodeEtcdRaft()
@@ -1017,4 +1015,31 @@ func UpdateOrdererConfigFails(n *nwo.Network, orderer *nwo.Orderer, channel stri
 
 		return strings.Contains(string(sess.Err.Contents()), "Successfully submitted channel update")
 	}, n.EventuallyTimeout).Should(BeFalse())
+}
+
+func assertPreMigrationChecks(network *nwo.Network, peer *nwo.Peer, orderer *nwo.Orderer, channel string) {
+	By("Checking current consensus type")
+	config := nwo.GetConfig(network, peer, orderer, channel)
+	consensusTypeValue := extractOrdererConsensusType(config)
+	Expect(consensusTypeValue.Type).To(Equal("etcdraft"))
+	Expect(consensusTypeValue.State).To(Equal(protosorderer.ConsensusType_STATE_NORMAL))
+
+	By("Verifying channel functionality")
+	assertBlockCreation(network, orderer, peer, channel, 1)
+
+	By("Checking orderer endpoints")
+	ordererAddresses := config.ChannelGroup.Values[channelconfig.OrdererAddressesKey]
+	Expect(ordererAddresses).NotTo(BeNil(), "Orderer addresses are not set in channel config")
+
+	By("Verifying orderer cluster communication")
+	Eventually(orderer.Err(), network.EventuallyTimeout).Should(gbytes.Say("Starting cluster communication"))
+
+	By("Checking system channel (if exists)")
+	systemChannel := nwo.SystemChannel(network)
+	if systemChannel != "" {
+		By("Verifying system channel does not exist")
+		Expect(systemChannel).To(BeEmpty(), "System channel should not exist for migration")
+	}
+
+	By("All pre-migration checks passed successfully")
 }
